@@ -1,0 +1,194 @@
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chat</title>
+  <!-- Material resources -->
+  <link rel="stylesheet" href="/.edit/material/material-components.min.css">
+  <link rel="stylesheet" href="/.edit/material/material-icons.css">
+  <link rel="stylesheet" href="/.edit/material/roboto.css">
+  <script src="/.edit/material/material-components.min.js"></script>
+  <script src="/.edit/androidscript-ace/src-min/ace.js"></script>
+  <!-- Custom styles & scripts -->
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="lib/message-styles/message-classic.css">
+  <script src="lib/cloudstore.min.js"></script>
+  <script src="lib/CloudLogin.js"></script>
+  <script src="lib/ChatApi.js"></script>
+  <script src="lib/Utils.js"></script>
+  <script src="lib/extension.js"></script>
+  <script src="script.js"></script>
+  <script src="admin.js"></script>
+  <script src="file:///android_asset/app.js"></script>
+</head>
+
+<body onload="OnLoad()" class="mdc-typography">
+  <!-- Toolbar -->
+  <header class="mdc-top-app-bar mdc-top-app-bar--fixed" style="box-shadow: 0 0 1px 1px rgba(0, 0, 0, 0.1)">
+    <div class="mdc-top-app-bar__row">
+      <section class="mdc-top-app-bar__section mdc-top-app-bar__section--align-start">
+        <span class="mdc-top-app-bar__title" style="color: #efefef">
+          <span class="material-icons" style="padding-right: 6px">chat</span>
+        </span>
+        <div class="mdc-select mdc-select--outlined mdc-select--no-label" style="width: 400px">
+          <div class="mdc-select__anchor" role="button" aria-haspopup="listbox" aria-labelledby="select-selected-text">
+            <span class="mdc-select__ripple"></span>
+            <span class="mdc-select__selected-text" id="select-selected-text">Chat</span>
+            <span class="mdc-select__dropdown-icon">
+              <i class="mdc-select__dropdown-icon-inactive"></i>
+              <i class="mdc-select__dropdown-icon-active"></i>
+            </span>
+            <span class="mdc-line-ripple"></span>
+          </div>
+          <!-- /.mdc-select-anchor -->
+          <div class="mdc-select__menu mdc-menu mdc-menu-surface" role="listbox" id="rooms">
+            <ul class="mdc-list mdc-list--two-line">
+              <li class="mdc-list-item mdc-list-item--selected" data-value="chat" aria-selected="true">
+                <span class="mdc-list-item__ripple"></span>
+                <span class="mdc-list-item__text">
+                  <span class="mdc-list-item__primary-text">Chat</span>
+                  <span class="mdc-list-item__secondary-text"></span>
+                </span>
+              </li>
+              <li class="mdc-list-item" data-value="premium" role="option">
+                <span class="mdc-list-item__ripple"></span>
+                <span class="mdc-list-item__text">
+                  <span class="mdc-list-item__primary-text">Premium</span>
+                  <span class="mdc-list-item__secondary-text"></span>
+                </span>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <!-- /.mdc-select -->
+      </section>
+      <section class="mdc-top-app-bar__section mdc-top-app-bar__section--align-end" role="toolbar">
+        <button class="material-icons mdc-top-app-bar__action-item mdc-icon-button" aria-label="Delete" title="Clear code" id="action-delete" style="display: none" onclick="editor.setValue('')">delete</button>
+        <button class="material-icons mdc-top-app-bar__action-item mdc-icon-button" aria-label="Options" id="action-options" title="Play/Pause message flow" onclick="toggleMessageFlow(this)" data-on="true">volume_up</button>
+      </section>
+    </div>
+  </header>
+  <!-- /.mdc-top-app-bar -->
+
+  <!-- Content -->
+  <div class="content mdc-top-app-bar--fixed-adjust">
+    <div class="progress-wheel">
+      <img src="loading.svg" alt="Loading..." title="Loading..." draggable="false">
+    </div>
+
+    <section id="fixed-column-width-layout-grid" class="chat-container">
+      <!-- Chat container -->
+      <div class="chat-content" onscroll="chatContent_OnScroll()">
+        <!-- Message -->
+      </div>
+      <!-- /.chat-content -->
+
+      <!-- Above of chat container -->
+      <div class="chat-footer mdc-layout-grid mdc-layout-grid--fixed-column-width">
+        <div class="mdc-layout-grid__inner">
+          <div class="mdc-layout-grid__cell mdc-layout-grid__cell--align-middle mdc-layout-grid__cell--span-1">
+            <button class="material-icons mdc-icon-button attach-ripple" aria-label="Add" title="Add" onclick="richMenu.open = true" id="rich-menu-toggle">
+              <span>
+                <!-- for badge-dot class -->
+              </span>
+              add_circle
+            </button>
+          </div>
+          <div class="mdc-layout-grid__cell mdc-layout-grid__cell--align-middle mdc-layout-grid__cell--span-2-phone mdc-layout-grid__cell--span-6-tablet mdc-layout-grid__cell--span-10-desktop">
+            <textarea rows="1" id="message-area" onkeyup="if(event.keyCode == 13 && event.ctrlKey) $('#send-button').click()" autofocus="autofocus"></textarea>
+          </div>
+          <div class="mdc-layout-grid__cell mdc-layout-grid__cell--align-middle mdc-layout-grid__cell--span-1">
+            <button class="material-icons mdc-icon-button attach-ripple" aria-label="Send (CNTRL+ENTER)" title="Send (CTRL+ENTER)" onclick="sendMessage()" id="send-button">send</button>
+          </div>
+        </div>
+      </div>
+      <!-- /.chat-footer -->
+
+      <!-- Code preview/edit -->
+      <div id="code-page" class="mdc-top-app-bar--fixed-adjust">
+        <div id="editor"></div>
+      </div>
+      <!-- /#code-page -->
+    </section>
+    <!-- /.chat-container -->
+
+    <!-- Login Page -->
+    <div id="login-page">
+      <div class="center">
+        <h1>Login</h1>
+        <div class="platforms">
+          <!-- Google -->
+          <div class="platform-google" onclick="utils.openLoginDialog('Google')">
+            <svg viewbox="0 0 533.5 544.3" xmlns="http://www.w3.org/2000/svg">
+              <path d="M533.5 278.4c0-18.5-1.5-37.1-4.7-55.3H272.1v104.8h147c-6.1 33.8-25.7 63.7-54.4 82.7v68h87.7c51.5-47.4 81.1-117.4 81.1-200.2z" fill="#4285f4" />
+              <path d="M272.1 544.3c73.4 0 135.3-24.1 180.4-65.7l-87.7-68c-24.4 16.6-55.9 26-92.6 26-71 0-131.2-47.9-152.8-112.3H28.9v70.1c46.2 91.9 140.3 149.9 243.2 149.9z" fill="#34a853" />
+              <path d="M119.3 324.3c-11.4-33.8-11.4-70.4 0-104.2V150H28.9c-38.6 76.9-38.6 167.5 0 244.4l90.4-70.1z" fill="#fbbc04" />
+              <path d="M272.1 107.7c38.8-.6 76.3 14 104.4 40.8l77.7-77.7C405 24.6 339.7-.8 272.1 0 169.2 0 75.1 58 28.9 150l90.4 70.1c21.5-64.5 81.8-112.4 152.8-112.4z" fill="#ea4335" />
+            </svg>
+            <span>Google</span>
+          </div>
+          <!-- Twitter -->
+          <div class="platform-twitter" onclick="utils.openLoginDialog('Twitter')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewbox="0 0 24 24" fill="#1da1f2">
+              <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z" />
+            </svg>
+            <span>Twitter</span>
+          </div>
+          <!-- Facebook -->
+          <div class="platform-facebook" onclick="utils.openLoginDialog('Facebook')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewbox="0 0 24 24" fill="#3b5998">
+              <path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z" />
+            </svg>
+            <span>Facebook</span>
+          </div>
+        </div>
+        <!-- /.platform -->
+      </div>
+    </div>
+    <!-- /#login-page -->
+
+  </div>
+  <!-- /.content -->
+
+  <!-- Menu -->
+  <div class="mdc-menu mdc-menu-surface attachment-menu">
+    <ul class="mdc-list" role="menu" aria-hidden="true" aria-orientation="vertical" tabindex="-1">
+      <li class="mdc-list-item" role="menuitem" onclick="toggleCodePage()">
+        <span class="material-icons">code</span>
+        <span class="mdc-list-item__ripple"></span>
+        <span class="mdc-list-item__text">Code</span>
+      </li>
+    </ul>
+  </div>
+  <!-- /.mdc-menu -->
+
+  <!-- Dialog -->
+  <div class="mdc-dialog">
+    <div class="mdc-dialog__container">
+      <div class="mdc-dialog__surface" role="alertdialog" aria-modal="true" aria-labelledby="alert-dialog-title" aria-describedby="alert-dialog-content">
+        <h2 class="mdc-dialog__title alert-dialog-title" id="alert-dialog-title"></h2>
+        <div class="mdc-dialog__content">
+          <p class="alert-dialog-text" id="alert-dialog-content"></p>
+        </div>
+        <div class="mdc-dialog__actions">
+          <button type="button" class="mdc-button mdc-dialog__button" data-mdc-dialog-action="cancel">
+            <div class="mdc-button__ripple"></div>
+            <span class="mdc-button__label" style="color: #2196f3">Ok</span>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="mdc-dialog__scrim"></div>
+  </div>
+
+  <!-- Scroll to bottom -->
+  <button class="material-icons mdc-icon-button attach-ripple scroll-button" aria-label="Scroll to bottom" title="Scroll to bottom" onclick="scrollToEnd()">
+    <span>
+      <!-- For badge-dot class -->
+    </span>
+    keyboard_arrow_down
+  </button>
+</body>
+
+</html>
